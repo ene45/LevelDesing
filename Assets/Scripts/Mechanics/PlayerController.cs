@@ -128,7 +128,7 @@ namespace Platformer.Mechanics
 
             if (controlEnabled)
             {
-                move.x = Input.GetAxis("Horizontal");
+                move.x = Input.GetAxisRaw("Horizontal");
 
                 if (Input.GetButtonDown("Jump"))
                 {
