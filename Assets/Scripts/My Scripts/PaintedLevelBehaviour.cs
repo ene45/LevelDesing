@@ -37,7 +37,6 @@ namespace Platformer.Mechanics
         [Header("Switch Settings")]
         [SerializeField] private bool blueStartsActive = true;
         [SerializeField] private PlayerController player;
-        [SerializeField, Min(0f)] private float separationPadding = 0.02f;
 
         private readonly List<PaintedTile> blueTiles = new List<PaintedTile>();
         private readonly List<PaintedTile> orangeTiles = new List<PaintedTile>();
@@ -89,16 +88,13 @@ namespace Platformer.Mechanics
             RefreshTokenController();
 
             blueActive = blueStartsActive;
-            ApplyPlatformState(false);
+            ApplyPlatformState();
         }
 
         private void Update()
         {
             if (Input.GetMouseButtonDown(1))
-            {
-                blueActive = !blueActive;
-                ApplyPlatformState(true);
-            }
+                TrySwitchPlatforms();
         }
 
         private void PrepareInactivePreview()
@@ -209,7 +205,32 @@ namespace Platformer.Mechanics
                 tokenController.tokens = FindObjectsOfType<TokenInstance>();
         }
 
-        private void ApplyPlatformState(bool separatePlayer)
+        private void TrySwitchPlatforms()
+        {
+            bool previousState = blueActive;
+
+            blueActive = !blueActive;
+            ApplyPlatformState();
+
+            if (IsPlayerOverlappingLevel())
+            {
+                blueActive = previousState;
+                ApplyPlatformState();
+            }
+        }
+
+        private bool IsPlayerOverlappingLevel()
+        {
+            if (playerCollider == null || levelCollider == null)
+                return false;
+
+            ColliderDistance2D distance =
+                playerCollider.Distance(levelCollider);
+
+            return distance.isOverlapped;
+        }
+
+        private void ApplyPlatformState()
         {
             SetTiles(levelTilemap, blueTiles, blueActive);
             SetTiles(levelTilemap, orangeTiles, !blueActive);
@@ -220,9 +241,6 @@ namespace Platformer.Mechanics
             levelTilemap.RefreshAllTiles();
             inactivePreviewTilemap.RefreshAllTiles();
             RefreshCollider();
-
-            if (separatePlayer)
-                SeparatePlayerFromLevel();
         }
 
         private void SetTiles(
@@ -246,21 +264,6 @@ namespace Platformer.Mechanics
             Physics2D.SyncTransforms();
         }
 
-        private void SeparatePlayerFromLevel()
-        {
-            if (player == null || playerCollider == null || levelCollider == null)
-                return;
 
-            ColliderDistance2D distance = playerCollider.Distance(levelCollider);
-
-            if (!distance.isOverlapped)
-                return;
-
-            Vector2 correction =
-                distance.normal * (distance.distance - separationPadding);
-
-            player.Teleport(player.transform.position + (Vector3)correction);
-            Physics2D.SyncTransforms();
-        }
     }
 }
