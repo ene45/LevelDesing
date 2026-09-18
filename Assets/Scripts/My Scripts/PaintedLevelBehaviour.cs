@@ -80,6 +80,7 @@ namespace Platformer.Mechanics
 
             ScanPaintedLevel();
             SpawnCollectibles();
+            RefreshTokenController();
 
             blueActive = blueStartsActive;
             ApplyPlatformState(false);
@@ -159,6 +160,14 @@ namespace Platformer.Mechanics
 
                 levelTilemap.SetTile(position, null);
             }
+        }
+
+        private void RefreshTokenController()
+        {
+            TokenController tokenController = FindObjectOfType<TokenController>();
+
+            if (tokenController != null)
+                tokenController.tokens = FindObjectsOfType<TokenInstance>();
         }
 
         private void ApplyPlatformState(bool separatePlayer)
