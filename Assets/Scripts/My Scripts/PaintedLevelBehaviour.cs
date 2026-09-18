@@ -16,6 +16,10 @@ namespace Platformer.Mechanics
         [SerializeField] private Tilemap levelTilemap;
         [SerializeField] private TilemapCollider2D levelCollider;
 
+        [Header("Inactive Platform Preview")]
+        [SerializeField] private Tilemap inactivePreviewTilemap;
+        [SerializeField, Range(0f, 1f)] private float inactiveAlpha = 0.3f;
+
         [Header("Blue Platform Tiles")]
         [SerializeField] private TileBase blueFull;
         [SerializeField] private TileBase blueThin;
@@ -75,6 +79,8 @@ namespace Platformer.Mechanics
                 return;
             }
 
+            PrepareInactivePreview();
+
             if (player != null)
                 playerCollider = player.GetComponent<Collider2D>();
 
@@ -93,6 +99,39 @@ namespace Platformer.Mechanics
                 blueActive = !blueActive;
                 ApplyPlatformState(true);
             }
+        }
+
+        private void PrepareInactivePreview()
+        {
+            if (inactivePreviewTilemap == null)
+            {
+                GameObject previewObject = new GameObject("Inactive Platform Preview");
+                previewObject.layer = levelTilemap.gameObject.layer;
+                previewObject.transform.SetParent(levelTilemap.transform.parent, false);
+                previewObject.transform.localPosition = levelTilemap.transform.localPosition;
+                previewObject.transform.localRotation = levelTilemap.transform.localRotation;
+                previewObject.transform.localScale = levelTilemap.transform.localScale;
+
+                inactivePreviewTilemap = previewObject.AddComponent<Tilemap>();
+                TilemapRenderer previewRenderer =
+                    previewObject.AddComponent<TilemapRenderer>();
+
+                TilemapRenderer sourceRenderer =
+                    levelTilemap.GetComponent<TilemapRenderer>();
+
+                if (sourceRenderer != null)
+                {
+                    previewRenderer.sharedMaterial = sourceRenderer.sharedMaterial;
+                    previewRenderer.sortingLayerID = sourceRenderer.sortingLayerID;
+                    previewRenderer.sortingOrder = sourceRenderer.sortingOrder - 1;
+                }
+
+                inactivePreviewTilemap.tileAnchor = levelTilemap.tileAnchor;
+            }
+
+            inactivePreviewTilemap.ClearAllTiles();
+            inactivePreviewTilemap.color =
+                new Color(1f, 1f, 1f, inactiveAlpha);
         }
 
         private void ScanPaintedLevel()
@@ -172,21 +211,28 @@ namespace Platformer.Mechanics
 
         private void ApplyPlatformState(bool separatePlayer)
         {
-            SetTiles(blueTiles, blueActive);
-            SetTiles(orangeTiles, !blueActive);
+            SetTiles(levelTilemap, blueTiles, blueActive);
+            SetTiles(levelTilemap, orangeTiles, !blueActive);
+
+            SetTiles(inactivePreviewTilemap, blueTiles, !blueActive);
+            SetTiles(inactivePreviewTilemap, orangeTiles, blueActive);
 
             levelTilemap.RefreshAllTiles();
+            inactivePreviewTilemap.RefreshAllTiles();
             RefreshCollider();
 
             if (separatePlayer)
                 SeparatePlayerFromLevel();
         }
 
-        private void SetTiles(List<PaintedTile> tiles, bool visible)
+        private void SetTiles(
+            Tilemap targetTilemap,
+            List<PaintedTile> tiles,
+            bool visible)
         {
             foreach (PaintedTile paintedTile in tiles)
             {
-                levelTilemap.SetTile(
+                targetTilemap.SetTile(
                     paintedTile.position,
                     visible ? paintedTile.tile : null);
             }
