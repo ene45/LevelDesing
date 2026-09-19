@@ -37,6 +37,12 @@ namespace Platformer.Mechanics
         [SerializeField] private bool blueStartsActive = true;
         [SerializeField] private PlayerController player;
 
+        [Header("Switch Audio")]
+        [SerializeField] private AudioClip switchSuccessAudio;
+        [SerializeField] private AudioClip switchBlockedAudio;
+        [SerializeField, Range(0f, 1f)] private float switchAudioVolume = 0.65f;
+        private AudioSource switchAudioSource;
+
         private readonly List<PaintedTile> blueTiles = new List<PaintedTile>();
         private readonly List<PaintedTile> orangeTiles = new List<PaintedTile>();
         private readonly List<Vector3Int> collectibleCells = new List<Vector3Int>();
@@ -87,6 +93,12 @@ namespace Platformer.Mechanics
 
             if (player != null)
                 playerCollider = player.GetComponent<Collider2D>();
+
+            // Dedicated 2D source: independent from music and player sounds.
+            switchAudioSource = gameObject.AddComponent<AudioSource>();
+            switchAudioSource.playOnAwake = false;
+            switchAudioSource.loop = false;
+            switchAudioSource.spatialBlend = 0f;
 
             ScanPaintedLevel();
             PreparePlatformGroups();
@@ -267,7 +279,17 @@ namespace Platformer.Mechanics
                 blueActive = !blueActive;
                 ApplyPlatformState();
                 Physics2D.SyncTransforms();
+                PlaySwitchSound(switchBlockedAudio);
+                return;
             }
+
+            PlaySwitchSound(switchSuccessAudio);
+        }
+
+        private void PlaySwitchSound(AudioClip clip)
+        {
+            if (clip != null && switchAudioSource != null)
+                switchAudioSource.PlayOneShot(clip, switchAudioVolume);
         }
 
         private void ApplyPlatformState()
@@ -295,3 +317,4 @@ namespace Platformer.Mechanics
 
     }
 }
+
